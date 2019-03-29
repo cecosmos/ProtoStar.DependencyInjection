@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>ProtoStar.DependencyInjection</RootNamespace>
+    <RepositoryUrl>https://github.com/cecosmos/ProtoStar.DependencyInjection</RepositoryUrl>
+    <Company>ceCosmos</Company>
+    <Product>ProtoStar.DependencyInjection</Product>
+    <Version>1.0.0-alpha</Version>
+    <Authors>Johni.Michels</Authors>
+    <LangVersion>latest</LangVersion>
+    <PackageId>ProtoStar.DependencyInjection</PackageId>
+    <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
+  </PropertyGroup>
+
+</Project>
