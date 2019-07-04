@@ -4,7 +4,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>ProtoStar.DependencyInjection</AssemblyName>
     <PackageId>ProtoStar.DependencyInjection</PackageId>
-    <Version>1.0.0-alpha</Version>
+    <Version>1.0.0-alpha.1</Version>
     <Company>ceCosmos</Company>
     <Authors>Johni.Michels</Authors>
     <RepositoryUrl>https://github.com/cecosmos/ProtoStar.DependencyInjection</RepositoryUrl>
@@ -14,8 +14,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="2.2.0" />
-    <PackageReference Include="ProtoStar.Collections" Version="1.0.0-alpha" />
-    <PackageReference Include="ProtoStar.Core" Version="2.0.0-alpha" />
+    <PackageReference Include="ProtoStar.Collections" Version="1.0.0-alpha.1" />
   </ItemGroup>
 
 </Project>

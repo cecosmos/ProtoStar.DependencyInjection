@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.ComponentModel.Design;
 using Microsoft.Extensions.DependencyInjection;
-using ProtoStar.Core;
 using ProtoStar.Collections;
 
 namespace ProtoStar.DependencyInjection
@@ -53,9 +52,16 @@ namespace ProtoStar.DependencyInjection
             return result();
         }
 
-        public object GetRequiredService(Type serviceType)=>
-            ((Func<object>)GetService(serviceType).ThrowOnNull).
-            CatchingException<object,ArgumentNullException>(()=>throw new InvalidOperationException());
-
+        public object GetRequiredService(Type serviceType)
+        {
+            try
+            {                
+                return GetService(serviceType).ThrowOnNull();
+            }
+            catch (System.NullReferenceException)
+            {                
+                throw new InvalidOperationException();
+            }
+        }
     }
 }
