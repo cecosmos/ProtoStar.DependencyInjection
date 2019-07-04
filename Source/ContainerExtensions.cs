@@ -6,7 +6,6 @@ using System.Linq;
 using System;
 using System.ComponentModel.Design;
 using Microsoft.Extensions.DependencyInjection;
-using ProtoStar.Core;
 
 namespace ProtoStar.DependencyInjection
 {
