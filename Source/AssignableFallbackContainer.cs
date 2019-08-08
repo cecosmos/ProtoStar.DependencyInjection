@@ -7,61 +7,120 @@ using System.Collections.Generic;
 using System.Linq;
 using System.ComponentModel.Design;
 using Microsoft.Extensions.DependencyInjection;
-using ProtoStar.Collections;
 
 namespace ProtoStar.DependencyInjection
 {
-    public class AssignableFallbackContainer :
-        IServiceContainer, ISupportRequiredService
+    /// <summary>
+    /// This service container can fallback any service not declared to a
+    /// declared service that implements the requested service.
+    /// </summary>
+    /// <example>
+    /// <code>
+    /// public interface INumberService
+    /// {
+    ///     IEnumerable<int> GetNumbers();
+    /// }
+    /// public interface IEvenService : INumberService
+    /// {
+    ///     IEnumerable<int> GetEvenNumbers();
+    /// }
+    /// public 
+    /// public class EvenService : INumberService
+    /// {
+    ///     public IEnumerable<int> GetNumbers() => GetEvenNumbers();
+    ///     public IEnumerable<int> GetEvenNumbers() => Enumerable.Range(0,int.MaxValue)
+    /// }
+    /// 
+    /// </code>
+    /// </example>
+    public class AssignableFallbackContainer : ServiceContainer
     {
         private readonly Dictionary<Type, Func<object>> resolvers = new Dictionary<Type, Func<object>>();
 
-        public void AddService(Type serviceType, ServiceCreatorCallback callback)=>
-            resolvers[serviceType] = ()=>callback(this,serviceType);
-        
+        public AssignableFallbackContainer() { }
 
-        public void AddService(Type serviceType, ServiceCreatorCallback callback, bool promote)=>
-            AddService(serviceType,callback);
-
-        public void AddService(Type serviceType, object serviceInstance)
+        public AssignableFallbackContainer(IServiceProvider parentProvider)
         {
-            serviceType.EnsureInheritance(serviceInstance.GetType());
-            resolvers[serviceType] = ()=>serviceInstance;
+            ParentProvider = parentProvider;
         }
 
-        public void AddService(Type serviceType, object serviceInstance, bool promote)=>
-            AddService(serviceType,serviceInstance);
+        protected override Type[] DefaultServices => base.DefaultServices.Union(new[] { GetType() }).ToArray();
 
-        public void RemoveService(Type serviceType)=>
-            resolvers.Remove(serviceType);
+        private IServiceProvider ParentProvider { get; set; }
+
+        private IServiceContainer ValidPromotion(bool promote) =>
+            (promote && ParentProvider is IServiceContainer serviceContainer) ?
+                serviceContainer :
+                null;
+
+        private IServiceContainer ValidPromotion(bool promote, out bool wasPromoted)
+        {
+            var result = ValidPromotion(promote);
+            wasPromoted = result == null ? false : true;
+            return result;
+        }
         
 
-        public void RemoveService(Type serviceType, bool promote)=>
-            RemoveService(serviceType);
-
-        public object GetService(Type serviceType)
+        public override object GetService(Type serviceType)
         {
-            if (!resolvers.TryGetValue(serviceType, out var result))
+            serviceType.ThrowOnNull(nameof(serviceType));
+            object service = null;
+
+            if (DefaultServices.Any(t => serviceType.IsEquivalentTo(t))) return this;
+
+            if (!resolvers.TryGetValue(serviceType, out var value))
+                value = (resolvers.FirstOrDefault(keyValue=> serviceType.IsAssignableFrom(keyValue.Key)).Value) ??
+                    (() => null);
+
+            service = value();
+
+            if (service is ServiceCreatorCallback serviceCreator)
             {
-                result = resolvers.TryFind(
-                    keyValue=> serviceType.IsAssignableFrom(keyValue.Key),
-                    out var service)?
-                    service.Value:
-                    ()=>null;
+                service = serviceCreator(this, serviceType);
+                if (service != null && !service.GetType().IsCOMObject && !serviceType.IsInstanceOfType(service)) service = null;
+                resolvers[serviceType] = () => service;
             }
-            return result();
+
+            if (service == null && ParentProvider != null) service = ParentProvider.GetService(serviceType);
+
+            return service;
         }
 
-        public object GetRequiredService(Type serviceType)
+        public override void AddService(Type serviceType, ServiceCreatorCallback callback, bool promote)
         {
-            try
-            {                
-                return GetService(serviceType).ThrowOnNull();
+            ValidPromotion(promote, out var wasPromoted)?.AddService(serviceType, callback, promote);
+            if (wasPromoted) return;
+            serviceType.ThrowOnNull(nameof(serviceType));
+            callback.ThrowOnNull(nameof(callback));
+            resolvers.Add(serviceType, () => callback);
+            
+        }
+
+        public override void AddService(Type serviceType, object serviceInstance, bool promote)
+        {
+
+            ValidPromotion(promote, out var wasPromoted)?.AddService(serviceType, serviceInstance, promote);
+            if (wasPromoted) return;
+
+            if (serviceInstance is ServiceCreatorCallback serviceCreator)
+            {
+                AddService(serviceType, serviceCreator, promote);
+                return;
             }
-            catch (System.NullReferenceException)
-            {                
-                throw new InvalidOperationException();
-            }
+
+            if (!serviceInstance.ThrowOnNull(nameof(serviceInstance)).GetType().IsCOMObject &
+                !serviceType.ThrowOnNull(nameof(serviceType)).IsInstanceOfType(serviceInstance))
+                throw new ArgumentException();
+
+            resolvers.Add(serviceType, () => serviceInstance);
+
+        }
+
+        public override void RemoveService(Type serviceType, bool promote)
+        {
+            ValidPromotion(promote, out var wasPromoted)?.RemoveService(serviceType, promote);
+            if (wasPromoted) return;
+            resolvers.Remove(serviceType);            
         }
     }
 }

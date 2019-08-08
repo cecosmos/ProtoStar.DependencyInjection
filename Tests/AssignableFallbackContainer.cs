@@ -23,7 +23,7 @@ namespace ProtoStar.DependencyInjection.Tests
         {
             var concrete = new List<int>();
             var container = new AssignableFallbackContainer();
-            container.AddService(typeof(IList<int>),concrete);
+            container.AddService<IList<int>>(concrete);
             Assert.Equal(concrete,container.GetService(typeof(IEnumerable<int>))); 
         }
 

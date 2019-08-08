@@ -6,6 +6,7 @@ using System.Linq;
 using System;
 using System.ComponentModel.Design;
 using Microsoft.Extensions.DependencyInjection;
+using System.Collections.Generic;
 
 namespace ProtoStar.DependencyInjection
 {
@@ -28,6 +29,6 @@ namespace ProtoStar.DependencyInjection
 
         public static void AddService<T>(this IServiceContainer provider, T service)=>
             provider.AddService(typeof(T), service);
-        
+
     }
 }
